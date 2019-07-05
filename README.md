@@ -25,73 +25,96 @@ Spec
 
 ### Structure
 
-A mic file is made up of a series of directives. A directive is a single line that takes one of two basic forms:
+A mic file is made up of a series of directives. A directive is a single line that looks similar to one of the following:
 
 ```mic
-name value metadata
+name value
+name key value
+name key => subkey value
+name key => subkey => value
+# Etc.
 ```
 
-or
+Directives can also be grouped via parenthesized blocks. For example,
 
 ```mic
-name key metadata => value metadata
-```
-
-In the first form, the directive is a definition of a value to be assigned to a name. A name must fit the regular expression `[a-zA-Z][a-zA-Z0-9_]*`. A value may be any of the types defined below. The metadata field is similar to the value field, but it is optional and is usage-specific. For more information, see the section on metadata below.
-
-These directives are ordered definitions of the values to be assigned to a name. In other words, if multiple directives with the same name appear multiple times in the same file, these are considered to be similar to an array definition. For example,
-
-```mic
-example one
-example two
-```
-
-would be similar to saying `config.example = ['one', 'two']` in JavaScript.
-
-In the second form, the directive means that a key-value mapping is established in the config entry so named. A key must have fit the same regular expression that a config entry name does, as specified above. Like with the first form, this may be specified multiple times. In other words,
-
-```mic
-example k1 => one
-example k2 => two
-```
-
-would be similar to the JavaScript statement `config.example = {k1: 'one', k2: 'two'}`. If the same key is used multiple times, then, like specifying the same directive name multiple times, it means that an array is to be stored in that object.
-
-In all of these cases, for simplicity, an implementation may opt to consider a single directive or key to be equivalent to an array with a single entry, rather than a stand-alone value.
-
-To avoid repetition, directives may be grouped via a parenthesized block. For example,
-
-```mic
-example (
-	one
-	two
+name (
+	value1
+	value2
+	value3
 )
 ```
 
 is exactly equivalent to
 
 ```mic
-example one
-example two
+name value1
+name value2
+name value3
 ```
 
-and
+Directives containing the `=>` operator may also be grouped into nested blocks, such as
 
 ```mic
-example (
-	k1 => one
-	k2 => two
+name (
+	key => (
+		subkey value1
+		subkey value2
+	)
 )
 ```
 
-is exactly equivalent to
+One difference to note between mic and various serialization formats is that mic files are not designed to denote the types of their own values. Instead, the expected types are defined by the user and the file is parsed accordingly.
+
+In all cases, directive names must fit the regular expression `[a-zA-Z][a-zA-Z0-9_]*`. Keys, subkeys, and values may be any of the basic types described below, although implementations may allow for custom types.
+
+In it's most basic form, `name value`, it is simply a definition of a value to be assigned to a name. A common use for this form might be the inclusion of values in an array. For example, assuming a JavaScript implementation,
 
 ```mic
-example k1 => one
-example k2 => two
+name (
+	value1
+	value2
+)
 ```
 
-### Value Types
+could result in the equivalent of something like `config.name = ['value1', 'value2']`.
+
+The `name key value` form is for more complex, hierarchical data, such as producing a key-value mapping. For example,
+
+```mic
+name (
+	key1 one
+	key2 two
+)
+```
+
+could be `config.name = {key1: 'one', key2: 'two'}`.
+
+If these levels of hierarchy are not structural enough, the `=>` operator may be used to produce a deeper hierarchy. Again, this is highly dependent on use. Several examples are as follows:
+
+```mic
+name (
+	key1 => one
+	key2 => (
+		two
+		three
+	)
+)
+```
+
+is the equivalent of `config.name = [{key1: ['one']}, {key2: ['two', 'three']}]`.
+
+```mic
+name (
+	key => (
+		subkey1 one
+		subkey2 two
+	)
+)
+
+is the equivalent of `config.name = {key: {subkey1: 'one', subkey2: 'two'}}`.
+
+### Basic Value Types
 
 A value may be one of three types: A string, a number, or a boolean. Which type the value is can be determined from the raw value, but there are some ambiguities that can be settled differently depending on implementation and usage. For more information, see the section on schemas below. This section describes the default way in which ambiguities are determined.
 
@@ -116,14 +139,6 @@ Numbers may be defined in one of two ways:
 #### Booleans
 
 Boolean values are much simpler than the others, as there are only two possible ones: `true` and `false`.
-
-### Hierarchy
-
-TODO: Explain how hierarchical directives work.
-
-### Metadata
-
-TODO: Explain what metadata is for and how implementations should use it.
 
 Schemas
 -------
