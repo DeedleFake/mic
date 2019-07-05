@@ -111,6 +111,7 @@ name (
 		subkey2 two
 	)
 )
+```
 
 is the equivalent of `config.name = {key: {subkey1: 'one', subkey2: 'two'}}`.
 
